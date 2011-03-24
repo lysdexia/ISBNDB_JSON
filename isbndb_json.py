@@ -81,6 +81,10 @@ class Query(object):
 class Book(object):
 
     def json(self):
+        # this is a kinnard! I am using pyjson module instead
+        # of python standard json otherwise:
+        # return json.JSONEcoder().encode(self.__dict__)
+        # will replace with correct code later
         # spit out vars in json format
         _json = {}
         for i in self.__dict__:
