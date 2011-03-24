@@ -1,0 +1,2 @@
+Web Service to convert isbndb XML api output to JSON.
+Basic functionality (less any actual web server goodness. :-) ) Handles only a couple of pieces of the api at this point.
