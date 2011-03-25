@@ -4,19 +4,8 @@ import xml.etree.cElementTree as ET
 
 class Query(object):
     # query isbndb and convert output into book objects
- 
-    def isbn(self, isbn, results=None):
-        # query by ISBN number
-        query = { 
-            "index1": "isbn",
-            "access_key": access_key,
-            "value1": isbn,
-            }
-        if results:
-            query["results"] = results
-        return self.isbndb(query)
 
-    def isbndb(self, query):
+    def isbndb_query(self, query):
         # returns a list of books in object form
         self.remote_error = None
         args = urllib.urlencode(query)
@@ -59,10 +48,10 @@ class Query(object):
         return books
 
     def _book_obj(self, xml_obj, book=None):
-        # Iterate over the xml object and place all values into book object
+        # Iterate over the xml object and place all values into Book object
         # Create a new book if initial book object not provided.
         if not book:
-            book = Book()
+            book = DBBook()
         for parent, child in self._iterparent(xml_obj):
             setattr(book, parent.tag, parent.text.strip())
             for item in parent.items():
@@ -78,7 +67,7 @@ class Query(object):
             for child in parent:
                 yield parent, child
 
-class Book(object):
+class DBBook(object):
 
     def json(self):
         # this is a kinnard! I am using pyjson module instead
@@ -90,23 +79,67 @@ class Book(object):
         for i in self.__dict__:
             _json[i] = self.__dict__[i]
         return json.dumps(_json)
+
+class Books(Query):
+    def isbn(self, isbn, results=None):
+        # query by ISBN number
+        # results: [details|texts|prices|pricehistory|subjects|marc|authors]
+        
+        query = { 
+            "index1": "isbn",
+            "access_key": access_key,
+            "value1": isbn,
+            }
+        if results:
+            query["results"] = results
+        return self.isbndb_query(query)
+
+    def title(self, title):
+        query = { 
+            "index1": "title",
+            "access_key": access_key,
+            "value1": title,
+            }
+        return self.isbndb_query(query)
+
+class Subjects(object):
+    pass
+
+class Categories(object):
+    pass
+
+class Authors(object):
+    pass
+
+class Publishers(object):
+    pass
        
+
+def isbn_test():
+    test_isbns = [ "0596000855", ]
+    for b in test_isbns:
+        for i in ["prices", "details", "texts"]:
+            q = Books()
+            books = q.isbn(b, i)
+            print ("%s %s"%(i, len(books)))
+            for book in books:
+                if hasattr(book, "price"):
+                    print (book.json())
+                    print ("%s %s"%(book.currency_code, book.price))
+
+def title_test():
+    test_titles = [ "neruomancer", "artificial kid", ]
+    for t in test_titles:
+        q = Books()
+        books = q.title(t)
+        for book in books:
+            print book.json()
 # testing. 
 if __name__ == "__main__":
 
     access_key = "XXXXXXXX"
+    access_key = "M9N4RWZC"
     isbndb = "http://isbndb.com/api/books.xml"
-
-    test_books = {
-        "propy": "0596000855",
-        }
-    
-    for b in test_books:
-        for i in ["prices", "details", "texts"]:
-            q = Query()
-            books = q.isbn(test_books[b], i)
-            print ("%s %s"%(i, len(books)))
-            #for book in books:
-            #    if hasattr(book, "price"):
-            #        print (book.json())
-            #        print ("%s %s"%(book.currency_code, book.price))
+    #isbn_test()
+    title_test()
+  
