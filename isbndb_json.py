@@ -1,15 +1,15 @@
 #!/usr/bin/env python
-import urllib2, urllib, json, copy
+import urllib2, urllib, json, copy, os
 import xml.etree.cElementTree as ET
 
 class Query(object):
     # query isbndb and convert output into book objects
 
-    def isbndb_query(self, query):
+    def isbndb_query(self, collection, query):
         # returns a list of books in object form
         self.remote_error = None
         args = urllib.urlencode(query)
-        request = urllib2.Request(isbndb, args)
+        request = urllib2.Request(os.path.join(isbndb, collection), args)
         response = None
         try:
             response = urllib2.urlopen(request).read()
@@ -67,6 +67,17 @@ class Query(object):
             for child in parent:
                 yield parent, child
 
+    def arguments(self, style, value, results):
+        query = { 
+            "index1": style,
+            "value1": value,
+            "access_key": access_key,
+            }
+        if results:
+            query["results"] = results
+        return self.isbndb_query(self.collection, query)
+
+
 class DBBook(object):
 
     def json(self):
@@ -81,65 +92,57 @@ class DBBook(object):
         return json.dumps(_json)
 
 class Books(Query):
-    def isbn(self, isbn, results=None):
-        # query by ISBN number
-        # results: [details|texts|prices|pricehistory|subjects|marc|authors]
-        
-        query = { 
-            "index1": "isbn",
-            "access_key": access_key,
-            "value1": isbn,
-            }
-        if results:
-            query["results"] = results
-        return self.isbndb_query(query)
+    def __init__(self):
+        self.collection = "books.xml"
+ 
+class Subjects(Query):
+    #Arguments: name, category_id, subject_id
+    #Results: categories, structure, 
+    def __init__(self):
+        self.collection = "subjects.xml"
+    
+   
+def Subjects_test():
+    # TODO name and category are not returning results, investigate
+    tests = [("name", ["astronomy+teaching",]),
+            ("category_id", ["science.biology.history"]),
+            ("subject_id", ["molecular_biology", "bioinformatics"]),
+            ]
+    result_types = ["categories", "structure"]
+    run_tests(tests, result_types)
 
-    def title(self, title):
-        query = { 
-            "index1": "title",
-            "access_key": access_key,
-            "value1": title,
-            }
-        return self.isbndb_query(query)
+def Books_test():
+    test_isbn = [ "0596000855", ]
+    test_title = [ "neruomancer", "artificial kid", ]
+    test_combined = [ "nutshell+by+o'reilly", "sonnets+by+lovecraft", ]
+    test_full = [ "lord+foul", "i+can+feel+the+heat+closing+in","case+molly+millions", ]
 
-class Subjects(object):
-    pass
+    tests = [
+        ("isbn", test_isbn),
+        ("title", test_title),
+        ("combined", test_combined),
+        ("full", test_full), ]
 
-class Categories(object):
-    pass
+    result_types = ["prices", "details", "texts", "pricehistory", "subjects", "marc", "authors", False]
 
-class Authors(object):
-    pass
+    run_tests(tests, result_types)
 
-class Publishers(object):
-    pass
-       
-
-def isbn_test():
-    test_isbns = [ "0596000855", ]
-    for b in test_isbns:
-        for i in ["prices", "details", "texts"]:
-            q = Books()
-            books = q.isbn(b, i)
-            print ("%s %s"%(i, len(books)))
-            for book in books:
-                if hasattr(book, "price"):
+def run_tests(tests, result_types):
+    for style, values in tests:
+        for value in values: 
+            for results in result_types:
+                q = Books()
+                books = q.arguments(style, value, results)
+                for book in books:
+                    print ("%s %s %s"%(style, value, results))
                     print (book.json())
-                    print ("%s %s"%(book.currency_code, book.price))
+                print ("%s %s"%(results, len(books)))
 
-def title_test():
-    test_titles = [ "neruomancer", "artificial kid", ]
-    for t in test_titles:
-        q = Books()
-        books = q.title(t)
-        for book in books:
-            print book.json()
 # testing. 
 if __name__ == "__main__":
 
-    access_key = "XXXXXXXX"
     access_key = "M9N4RWZC"
-    isbndb = "http://isbndb.com/api/books.xml"
-    #isbn_test()
-    title_test()
+    isbndb = "http://isbndb.com/api/"
+    Books_test()
+    Subjects_test()
   
