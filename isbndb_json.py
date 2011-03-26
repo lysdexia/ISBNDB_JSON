@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import urllib2, urllib, json, copy, os
+import urllib2, urllib, json, copy, os, ConfigParser
 import xml.etree.cElementTree as ET
 
 class Query(object):
@@ -77,7 +77,6 @@ class Query(object):
             query["results"] = results
         return self.isbndb_query(self.collection, query)
 
-
 class DBBook(object):
 
     def json(self):
@@ -93,15 +92,23 @@ class DBBook(object):
 
 class Books(Query):
     def __init__(self):
+        self.query_type = "Books"
         self.collection = "books.xml"
  
 class Subjects(Query):
     #Arguments: name, category_id, subject_id
     #Results: categories, structure, 
     def __init__(self):
+        self.query_type = "Subjects"
         self.collection = "subjects.xml"
-    
-   
+  
+class Categories(Query):
+    #Arguments: name, category_id, subject_id
+    #Results: categories, structure, 
+    def __init__(self):
+        self.query_type = "Categories"
+        self.collection = "categories.xml"
+
 def Subjects_test():
     # TODO name and category are not returning results, investigate
     tests = [("name", ["astronomy+teaching",]),
@@ -109,12 +116,12 @@ def Subjects_test():
             ("subject_id", ["molecular_biology", "bioinformatics"]),
             ]
     result_types = ["categories", "structure"]
-    run_tests(tests, result_types)
+    run_tests(Subjects, tests, result_types)
 
 def Books_test():
     test_isbn = [ "0596000855", ]
     test_title = [ "neruomancer", "artificial kid", ]
-    test_combined = [ "nutshell+by+o'reilly", "sonnets+by+lovecraft", ]
+    test_combined = [ "nutshell+by+o'reilly", "sonnets+by+shakespeare", ]
     test_full = [ "lord+foul", "i+can+feel+the+heat+closing+in","case+molly+millions", ]
 
     tests = [
@@ -125,13 +132,13 @@ def Books_test():
 
     result_types = ["prices", "details", "texts", "pricehistory", "subjects", "marc", "authors", False]
 
-    run_tests(tests, result_types)
+    run_tests(Books, tests, result_types)
 
-def run_tests(tests, result_types):
+def run_tests(Collection, tests, result_types):
     for style, values in tests:
         for value in values: 
             for results in result_types:
-                q = Books()
+                q = Collection()
                 books = q.arguments(style, value, results)
                 for book in books:
                     print ("%s %s %s"%(style, value, results))
@@ -143,6 +150,6 @@ if __name__ == "__main__":
 
     access_key = "M9N4RWZC"
     isbndb = "http://isbndb.com/api/"
-    Books_test()
+    #Books_test()
     Subjects_test()
-  
+    #Categories_test()
